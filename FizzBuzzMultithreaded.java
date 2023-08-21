@@ -1,55 +1,60 @@
-package FizzBuzz;
+package FizzBuzzMultithreaded;
+import java.util.concurrent.*;
 
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
-
-public class FizzBuzz {
-
+public class FizzBuzzMultithreaded {
     private final int n;
-    private volatile int currentNumber;
-    private final BlockingQueue<String> queue;
+    private int current = 1;
+    private final Semaphore semaphore = new Semaphore(1);
 
-    public FizzBuzz(int n) {
+    public FizzBuzzMultithreaded(int n) {
         this.n = n;
-        this.currentNumber = 1;
-        this.queue = new LinkedBlockingQueue<>();
     }
 
     public void fizz() throws InterruptedException {
         for (int i = 3; i <= n; i += 3) {
-            if (i % 5 != 0) {
-                queue.put("fizz");
+            if (i % 3 == 0 && i % 5 != 0) {
+                semaphore.acquire();
+                System.out.println("fizz");
+                current++;
+                semaphore.release();
             }
         }
     }
 
     public void buzz() throws InterruptedException {
         for (int i = 5; i <= n; i += 5) {
-            if (i % 3 != 0) {
-                queue.put("buzz");
+            if (i % 3 != 0 && i % 5 == 0) {
+                semaphore.acquire();
+                System.out.println("buzz");
+                current++;
+                semaphore.release();
             }
         }
     }
 
     public void fizzbuzz() throws InterruptedException {
         for (int i = 15; i <= n; i += 15) {
-            queue.put("fizzbuzz");
+            semaphore.acquire();
+            System.out.println("fizzbuzz");
+            current++;
+            semaphore.release();
         }
     }
 
     public void number() throws InterruptedException {
-        while (currentNumber <= n) {
-            if (currentNumber % 3 != 0 && currentNumber % 5 != 0) {
-                queue.put(Integer.toString(currentNumber));
+        while (current <= n) {
+            semaphore.acquire();
+            if (current % 3 != 0 && current % 5 != 0) {
+                System.out.println(current);
+                current++;
             }
-            currentNumber++;
-
+            semaphore.release();
         }
     }
 
     public static void main(String[] args) {
         int n = 15;
-        FizzBuzz fizzBuzz = new FizzBuzz(n);
+        FizzBuzzMultithreaded fizzBuzz = new FizzBuzzMultithreaded(n);
 
         Thread threadA = new Thread(() -> {
             try {
@@ -87,22 +92,5 @@ public class FizzBuzz {
         threadB.start();
         threadC.start();
         threadD.start();
-
-        try {
-            threadA.join();
-            threadB.join();
-            threadC.join();
-            threadD.join();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-
-        while (fizzBuzz.currentNumber <= n) {
-            try {
-                System.out.println(fizzBuzz.queue.take());
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
     }
 }
